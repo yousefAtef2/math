@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نادي أبطال الرياضيات | تعلم والعب!</title>
+    <!-- تحميل خط Cairo العربي المناسب للأطفال -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- تحميل مكتبة Tailwind CSS للتنسيق السريع والمتجاوب -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        kidBlue: '#38BDF8',
+                        kidYellow: '#FACC15',
+                        kidGreen: '#4ADE80',
+                        kidPink: '#F472B6',
+                        kidPurple: '#A78BFA',
+                        kidOrange: '#FB923C'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* تخصيص الخط العام والخلفية المرحة */
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #F0F9FF;
+            background-image: radial-gradient(#BAE6FD 2px, transparent 2px);
+            background-size: 32px 32px;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* حركات أنيميشن مبهجة للأطفال */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            70% { transform: scale(1.08); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* تصميم أزرار ثلاثية الأبعاد مبهجة وسهلة الضغط */
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        /* حاوية قصاصات الاحتفال (Confetti) */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- لوحة قصاصات الاحتفال عند الإجابة الصحيحة -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- الشريط العلوي (Header) مع العدادات والتحكم بالصوت -->
+    <header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-40 border-b-4 border-sky-200">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- الشعار والعنوان -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-black shadow-md transform -rotate-3">
+                    123
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black text-sky-700 leading-tight">نادي أبطال الرياضيات</h1>
+                    <p class="text-xs sm:text-sm text-slate-500 font-semibold">العب وتعلم واجمع النجوم! 🌟</p>
+                </div>
+            </div>
+
+            <!-- مؤشرات النقاط والنجوم والصوت -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- عداد النجوم -->
+                <div class="bg-amber-100 border-2 border-amber-300 px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm">
+                    <span class="text-xl">⭐</span>
+                    <span id="score-display" class="font-black text-amber-700 text-lg">0</span>
+                </div>
+
+                <!-- عداد الحماس (الإجابات المتتالية) -->
+                <div class="bg-rose-100 border-2 border-rose-300 px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm" title="إجابات صحيحة متتالية">
+                    <span class="text-xl">🔥</span>
+                    <span id="streak-display" class="font-black text-rose-600 text-lg">0</span>
+                </div>
+
+                <!-- زر تفعيل/كتم الصوت -->
+                <button id="sound-toggle" onclick="toggleSound()" class="bg-sky-100 hover:bg-sky-200 border-2 border-sky-300 p-2 rounded-2xl text-xl transition shadow-sm" title="تشغيل أو كتم الصوت">
+                    🔊
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 space-y-8">
+
+        <!-- قسم الترحيب والصورة الكرتونية الجذابة (Hero Section) -->
+        <section class="bg-gradient-to-l from-sky-500 via-blue-500 to-indigo-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl border-4 border-white relative overflow-hidden">
+            <!-- دوائر ديكورية في الخلفية -->
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full"></div>
+            <div class="absolute -bottom-12 right-10 w-32 h-32 bg-yellow-300/20 rounded-full"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 items-center gap-6 relative z-10">
+                <!-- النص الترحيبي -->
+                <div class="md:col-span-7 space-y-4 text-center md:text-right">
+                    <span class="inline-block bg-amber-400 text-slate-900 font-extrabold px-4 py-1 rounded-full text-sm shadow-sm">
+                        🚀 مغامرة الأرقام الممتعة
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-snug">
+                        أهلاً بك يا بطل في عالم <span class="text-yellow-300 underline decoration-wavy">الرياضيات الذكية!</span>
+                    </h2>
+                    <p class="text-sky-100 text-base sm:text-lg font-medium leading-relaxed">
+                        اختر صفك الدراسي، وحل الألغاز الحسابية الممتعة، واجمع النجوم الذهبية لتصبح بطل الرياضيات الأول!
+                    </p>
+                </div>
+
+                <!-- رسمة كرتونية عالية الجودة مرسومة بـ SVG تمثل صاروخ الفضاء والأرقام المبتسمة والنجوم -->
+                <div class="md:col-span-5 flex justify-center">
+                    <div class="w-60 h-60 sm:w-64 sm:h-64 animate-float">
+                        <svg viewBox="0 0 300 300" class="w-full h-full drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+                            <!-- دائرة خلفية مضيئة -->
+                            <circle cx="150" cy="150" r="130" fill="#EFF6FF" fill-opacity="0.2" />
+                            <circle cx="150" cy="150" r="105" fill="#DBEAFE" fill-opacity="0.25" />
+
+                            <!-- نجوم متلألئة حول الشخصيات -->
+                            <path d="M55 75 L61 90 L77 90 L64 99 L69 114 L55 105 L41 114 L46 99 L33 90 L49 90 Z" fill="#FACC15" />
+                            <path d="M245 65 L250 76 L262 76 L252 83 L256 95 L245 88 L234 95 L238 83 L228 76 L240 76 Z" fill="#FDE047" />
+                            <circle cx="245" cy="210" r="8" fill="#4ADE80" />
+                            <circle cx="50" cy="200" r="10" fill="#F472B6" />
+
+                            <!-- صاروخ الرياضيات المبتسم -->
+                            <g transform="translate(85, 35)">
+                                <!-- لهب الصاروخ -->
+                                <path d="M45 185 Q65 235 85 185 Z" fill="#F97316" />
+                                <path d="M53 185 Q65 215 77 185 Z" fill="#FACC15" />
+                                <!-- أجنحة الصاروخ -->
+                                <path d="M30 140 L5 175 L35 170 Z" fill="#EC4899" />
+                                <path d="M100 140 L125 175 L95 170 Z" fill="#EC4899" />
+                                <!-- جسم الصاروخ -->
+                                <path d="M65 10 C105 50 105 130 95 185 L35 185 C25 130 25 50 65 10 Z" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="3"/>
+                                <!-- مقدمة الصاروخ الحمراء -->
+                                <path d="M65 10 C82 28 92 48 96 65 L34 65 C38 48 48 28 65 10 Z" fill="#EF4444" />
+                                <!-- نافذة الصاروخ مع وجه مبتسم -->
+                                <circle cx="65" cy="105" r="24" fill="#38BDF8" stroke="#0284C7" stroke-width="4" />
+                                <!-- عيون وابتسامة داخل النافذة -->
+                                <circle cx="57" cy="101" r="3.5" fill="#0F172A" />
+                                <circle cx="73" cy="101" r="3.5" fill="#0F172A" />
+                                <path d="M57 111 Q65 119 73 111" stroke="#0F172A" stroke-width="3" fill="none" stroke-linecap="round" />
+                                <!-- رموز حسابية على جسم الصاروخ -->
+                                <text x="56" y="155" fill="#3B82F6" font-weight="900" font-size="22" font-family="Cairo">+ ×</text>
+                            </g>
+
+                            <!-- شارة الرقم 1 السعيدة -->
+                            <g transform="translate(25, 135)">
+                                <rect x="0" y="0" width="54" height="54" rx="16" fill="#FACC15" stroke="#FFFFFF" stroke-width="3"/>
+                                <text x="19" y="37" fill="#1E293B" font-weight="900" font-size="30" font-family="Cairo">1</text>
+                            </g>
+
+                            <!-- شارة الرقم 3 السعيدة -->
+                            <g transform="translate(215, 130)">
+                                <rect x="0" y="0" width="54" height="54" rx="16" fill="#4ADE80" stroke="#FFFFFF" stroke-width="3"/>
+                                <text x="18" y="37" fill="#064E3B" font-weight="900" font-size="30" font-family="Cairo">3</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- قسم اختيار الصف الدراسي (أول - ثاني - ثالث ابتدائي) -->
+        <section aria-label="اختر الصف الدراسي" class="space-y-3">
+            <h3 class="text-center text-xl sm:text-2xl font-extrabold text-slate-700">
+                👇 اختر صفك الدراسي لتبدأ التحدي:
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- الصف الأول الابتدائي -->
+                <button id="btn-grade-1" onclick="selectGrade(1)" class="grade-btn btn-3d bg-emerald-400 hover:bg-emerald-500 text-white p-4 rounded-3xl border-4 border-white flex flex-col items-center justify-center gap-1 cursor-pointer ring-4 ring-emerald-400">
+                    <span class="text-3xl">🐣</span>
+                    <span class="text-xl font-black">الصف الأول الابتدائي</span>
+                    <span class="text-xs font-bold bg-white/25 px-3 py-0.5 rounded-full">الجمع والطرح حتى 20</span>
+                </button>
+
+                <!-- الصف الثاني الابتدائي -->
+                <button id="btn-grade-2" onclick="selectGrade(2)" class="grade-btn btn-3d bg-amber-400 hover:bg-amber-500 text-slate-900 p-4 rounded-3xl border-4 border-white flex flex-col items-center justify-center gap-1 cursor-pointer opacity-85">
+                    <span class="text-3xl">🦁</span>
+                    <span class="text-xl font-black">الصف الثاني الابتدائي</span>
+                    <span class="text-xs font-bold bg-white/40 px-3 py-0.5 rounded-full">الأعداد حتى 100 والأنماط</span>
+                </button>
+
+                <!-- الصف الثالث الابتدائي -->
+                <button id="btn-grade-3" onclick="selectGrade(3)" class="grade-btn btn-3d bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-3xl border-4 border-white flex flex-col items-center justify-center gap-1 cursor-pointer opacity-85">
+                    <span class="text-3xl">🚀</span>
+                    <span class="text-xl font-black">الصف الثالث الابتدائي</span>
+                    <span class="text-xs font-bold bg-white/25 px-3 py-0.5 rounded-full">جدول الضرب والقسمة البسيطة</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- منطقة اللعب والتدريب التفاعلي -->
+        <section class="bg-white rounded-3xl shadow-xl border-4 border-sky-200 p-5 sm:p-8 space-y-6 relative">
+            <!-- شريط معلومات المرحلة الحالية -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b-2 border-slate-100 pb-4">
+                <div class="flex items-center gap-2">
+                    <span id="grade-badge" class="bg-emerald-100 text-emerald-800 font-extrabold px-4 py-1.5 rounded-2xl text-sm sm:text-base">
+                        الصف الأول الابتدائي
+                    </span>
+                    <span id="topic-badge" class="bg-sky-100 text-sky-800 font-bold px-3 py-1.5 rounded-2xl text-xs sm:text-sm">
+                        جمع وطرح ممتع
+                    </span>
+                </div>
+                <button onclick="generateQuestion()" class="text-sm font-bold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-4 py-2 rounded-2xl transition flex items-center gap-1">
+                    <span>🔄</span> سؤال جديد
+                </button>
+            </div>
+
+            <!-- عرض المسألة الحسابية -->
+            <div id="question-box" class="text-center py-4 space-y-4">
+                <!-- نص المسألة أو عنوانها -->
+                <p id="question-prompt" class="text-lg sm:text-xl font-bold text-slate-500">كم يساوي ناتج الجمع؟</p>
+                
+                <!-- المعادلة الرياضية بأرقام كبيرة وواضحة -->
+                <div id="equation-display" dir="ltr" class="text-4xl sm:text-6xl font-black text-slate-800 tracking-wider bg-slate-50 py-6 px-4 rounded-3xl border-2 border-dashed border-sky-300 inline-block min-w-[260px] sm:min-w-[360px] shadow-inner">
+                    5 + 3 = ؟
+                </div>
+
+                <!-- المساعد البصري للأطفال (تفاحات، نجوم، مكعبات عد) -->
+                <div id="visual-aid-container" class="pt-2 flex flex-wrap items-center justify-center gap-4 min-h-[60px]">
+                    <!-- يتم تعبئتها تلقائياً بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <!-- رسالة التغذية الراجعة التشجيعية -->
+            <div id="feedback-message" class="hidden text-center py-3 px-4 rounded-2xl font-black text-xl sm:text-2xl animate-pop">
+            </div>
+
+            <!-- خيارات الإجابة (أزرار كبيرة ملونة) -->
+            <div id="options-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                <!-- يتم توليد الأزرار الأربعة هنا -->
+            </div>
+
+            <!-- خيار كتابة الإجابة يدوياً للأطفال الأكبر سناً -->
+            <div class="pt-4 border-t-2 border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <label for="manual-answer" class="text-sm font-bold text-slate-500">أو اكتب إجابتك هنا يا بطل:</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="manual-answer" placeholder="؟" class="w-28 text-center text-2xl font-black py-2 px-3 rounded-2xl border-2 border-sky-300 focus:border-sky-500 focus:outline-none bg-sky-50/50">
+                    <button onclick="checkManualAnswer()" class="btn-3d bg-sky-500 hover:bg-sky-600 text-white font-black px-5 py-2.5 rounded-2xl text-base">
+                        تحقق ✅
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- أداة مساعدة تفاعلية: مستكشف جدول الضرب وخط الأعداد -->
+        <section class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl border-4 border-amber-200 p-6 shadow-md space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h3 class="text-xl sm:text-2xl font-black text-amber-800 flex items-center gap-2">
+                        <span>🧮</span> ركن المساعد الذكي (جدول الضرب الممتع)
+                    </h3>
+                    <p class="text-sm text-amber-700 font-semibold">اضغط على أي رقم لتشاهد جدول الضرب الخاص به بطريقة بصرية سهلة!</p>
+                </div>
+            </div>
+
+            <!-- أزرار اختيار الرقم من 1 إلى 10 -->
+            <div class="flex flex-wrap justify-center gap-2" id="table-selector">
+                <!-- يتم توليد الأزرار من 1 إلى 10 -->
+            </div>
+
+            <!-- عرض جدول الضرب المختار -->
+            <div id="multiplication-display" class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                <!-- يتم عرض البطاقات هنا -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- تذييل الصفحة -->
+    <footer class="bg-white border-t-4 border-sky-200 py-5 mt-8 text-center text-slate-600">
+        <p class="font-bold text-sm sm:text-base">صُنع بكل حب ❤️ لأبطال الرياضيات الصغار (الصف الأول - الثاني - الثالث الابتدائي)</p>
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           إعدادات اللعبة والمتغيرات العامة
+           ========================================================================== */
+        let currentGrade = 1; // الصف المختار افتراضياً: الأول الابتدائي
+        let currentAnswer = 0; // الإجابة الصحيحة للسؤال الحالي
+        let score = 0; // مجموع النجوم
+        let streak = 0; // عدد الإجابات الصحيحة المتتالية
+        let soundEnabled = true; // حالة الصوت
+        let isAnswered = false; // لمنع النقر المتكرر بعد الإجابة الصحيحة
+
+        // رسائل تشجيعية باللغة العربية
+        const praiseMessages = [
+            "أحسنت يا بطل! إجابة رائعة 🌟",
+            "ممتاز! أنت عبقري الرياضيات 🚀",
+            "رائع جداً! استمر يا ذكي 🎉",
+            "إجابة صحيحة 100%! بطل خارق 🦸‍♂️",
+            "مذهل! لقد حصلت على نجمة جديدة ⭐"
+        ];
+
+        const tryAgainMessages = [
+            "حاول مرة أخرى يا بطل، أنت قريب جداً! 💪",
+            "فكر قليلاً وعاود المحاولة يا ذكي 🤔",
+            "لا بأس! الأبطال يتعلمون من المحاولة 🌟"
+        ];
+
+        /* ==========================================================================
+           نظام المؤثرات الصوتية باستخدام Web Audio API (بدون ملفات خارجية)
+           ========================================================================== */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    // نغمة صاعدة مبهجة للإجابة الصحيحة
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+
+                    gainNode.gain.setValueAtTime(0.25, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'wrong') {
+                    // نغمة لطيفة للتنبيه عند الخطأ
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(220, now + 0.25);
+
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    // نقرة خفيفة للأزرار
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gainNode.gain.setValueAtTime(0.1, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            } catch (e) {
+                console.warn("Audio playback skipped:", e);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) playSound('click');
+        }
+
+        /* ==========================================================================
+           تغيير الصف الدراسي وتوليد الأسئلة المناسبة لكل مرحلة
+           ========================================================================== */
+        function selectGrade(grade) {
+            currentGrade = grade;
+            playSound('click');
+
+            // تحديث مظهر أزرار الصفوف
+            document.querySelectorAll('.grade-btn').forEach((btn, idx) => {
+                if (idx + 1 === grade) {
+                    btn.classList.remove('opacity-85');
+                    btn.classList.add('ring-4', 'ring-sky-400', 'scale-[1.02]');
+                } else {
+                    btn.classList.add('opacity-85');
+                    btn.classList.remove('ring-4', 'ring-sky-400', 'scale-[1.02]');
+                }
+            });
+
+            // تحديث الشارات العلوية
+            const gradeBadge = document.getElementById('grade-badge');
+            const topicBadge = document.getElementById('topic-badge');
+
+            if (grade === 1) {
+                gradeBadge.textContent = "الصف الأول الابتدائي";
+                gradeBadge.className = "bg-emerald-100 text-emerald-800 font-extrabold px-4 py-1.5 rounded-2xl text-sm sm:text-base";
+                topicBadge.textContent = "الجمع والطرح بالعد البصري (حتى 20)";
+            } else if (grade === 2) {
+                gradeBadge.textContent = "الصف الثاني الابتدائي";
+                gradeBadge.className = "bg-amber-100 text-amber-800 font-extrabold px-4 py-1.5 rounded-2xl text-sm sm:text-base";
+                topicBadge.textContent = "الأعداد حتى 100 وأكمل النمط";
+            } else if (grade === 3) {
+                gradeBadge.textContent = "الصف الثالث الابتدائي";
+                gradeBadge.className = "bg-purple-100 text-purple-800 font-extrabold px-4 py-1.5 rounded-2xl text-sm sm:text-base";
+                topicBadge.textContent = "جدول الضرب والقسمة البسيطة";
+            }
+
+            generateQuestion();
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateQuestion() {
+            isAnswered = false;
+            const feedbackEl = document.getElementById('feedback-message');
+            feedbackEl.classList.add('hidden');
+            document.getElementById('manual-answer').value = '';
+
+            const promptEl = document.getElementById('question-prompt');
+            const eqEl = document.getElementById('equation-display');
+            const visualEl = document.getElementById('visual-aid-container');
+            visualEl.innerHTML = '';
+
+            let questionText = "";
+            let visualHTML = "";
+
+            if (currentGrade === 1) {
+                // الصف الأول: جمع أو طرح بسيط حتى 20 مع رسومات تفاحات/نجوم للعد
+                const isAddition = Math.random() > 0.4;
+                const icons = ['🍎', '🍓', '🌟', '🎈', '🐤'];
+                const icon = icons[randomInt(0, icons.length - 1)];
+
+                if (isAddition) {
+                    const a = randomInt(1, 10);
+                    const b = randomInt(1, 10);
+                    currentAnswer = a + b;
+                    promptEl.textContent = "اجمع المجموعتين معاً يا بطل:";
+                    questionText = `${a} + ${b} = ؟`;
+
+                    // عرض مساعد بصري للعد
+                    visualHTML = `
+                        <div class="bg-emerald-50 border-2 border-emerald-200 px-4 py-2 rounded-2xl text-2xl tracking-widest">
+                            ${icon.repeat(a)}
+                        </div>
+                        <span class="text-2xl font-black text-emerald-600">+</span>
+                        <div class="bg-sky-50 border-2 border-sky-200 px-4 py-2 rounded-2xl text-2xl tracking-widest">
+                            ${icon.repeat(b)}
+                        </div>
+                    `;
+                } else {
+                    const a = randomInt(4, 15);
+                    const b = randomInt(1, a - 1);
+                    currentAnswer = a - b;
+                    promptEl.textContent = "اطرح العدد الثاني من الأول:";
+                    questionText = `${a} - ${b} = ؟`;
+
+                    // عرض العناصر مع شطب العناصر المطروحة بصرياً
+                    let items = '';
+                    for (let i = 0; i < a; i++) {
+                        if (i >= a - b) {
+                            items += `<span class="opacity-30 line-through">${icon}</span>`;
+                        } else {
+                            items += `<span>${icon}</span>`;
+                        }
+                    }
+                    visualHTML = `
+                        <div class="bg-rose-50 border-2 border-rose-200 px-4 py-2 rounded-2xl text-2xl tracking-widest">
+                            ${items}
+                        </div>
+                    `;
+                }
+
+            } else if (currentGrade === 2) {
+                // الصف الثاني: جمع وطرح حتى 100 أو إكمال نمط عددي
+                const type = randomInt(1, 3);
+                if (type === 1) {
+                    // جمع عشرات وآحاد
+                    const a = randomInt(12, 55);
+                    const b = randomInt(10, 40);
+                    currentAnswer = a + b;
+                    promptEl.textContent = "أوجد ناتج الجمع:";
+                    questionText = `${a} + ${b} = ؟`;
+                    visualHTML = `<span class="text-sm font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">💡 تلميح: اجمع الآحاد أولاً ثم العشرات!</span>`;
+                } else if (type === 2) {
+                    // طرح
+                    const a = randomInt(30, 95);
+                    const b = randomInt(10, a - 5);
+                    currentAnswer = a - b;
+                    promptEl.textContent = "أوجد ناتج الطرح:";
+                    questionText = `${a} - ${b} = ؟`;
+                    visualHTML = `<span class="text-sm font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">💡 تلميح: اطرح الآحاد من الآحاد والعشرات من العشرات!</span>`;
+                } else {
+                    // أكمل النمط (العد بالقفز 2 أو 5 أو 10)
+                    const step = [2, 5, 10][randomInt(0, 2)];
+                    const start = randomInt(1, 5) * step;
+                    currentAnswer = start + step * 3;
+                    promptEl.textContent = `أكمل النمط التالي (القفز بمقدار ${step}):`;
+                    questionText = `${start} , ${start + step} , ${start + step * 2} , ؟`;
+                    visualHTML = `<span class="text-sm font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">🚀 نزيد ${step} في كل خطوة!</span>`;
+                }
+
+            } else if (currentGrade === 3) {
+                // الصف الثالث: جدول الضرب والقسمة البسيطة
+                const isMultiplication = Math.random() > 0.35;
+                if (isMultiplication) {
+                    const a = randomInt(2, 10);
+                    const b = randomInt(2, 10);
+                    currentAnswer = a * b;
+                    promptEl.textContent = "ما هو حاصل الضرب؟";
+                    questionText = `${a} × ${b} = ؟`;
+
+                    // تمثيل بصري للمجموعات المتساوية إذا كانت الأرقام صغيرة
+                    if (a <= 5 && b <= 6) {
+                        let groups = '';
+                        for (let g = 0; g < a; g++) {
+                            groups += `<span class="bg-purple-100 border border-purple-300 px-2 py-1 rounded-xl text-base">${'⭐'.repeat(b)}</span>`;
+                        }
+                        visualHTML = `<div class="flex flex-wrap justify-center gap-2">${groups}</div>`;
+                    } else {
+                        visualHTML = `<span class="text-sm font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">💡 ${a} مجموعات في كل منها ${b}</span>`;
+                    }
+                } else {
+                    // قسمة بسيطة
+                    const divisor = randomInt(2, 9);
+                    const quotient = randomInt(2, 10);
+                    const dividend = divisor * quotient;
+                    currentAnswer = quotient;
+                    promptEl.textContent = "وزّع بالتساوي (أوجد ناتج القسمة):";
+                    questionText = `${dividend} ÷ ${divisor} = ؟`;
+                    visualHTML = `<span class="text-sm font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">💡 ما العدد الذي إذا ضربته في ${divisor} يعطيك ${dividend}؟</span>`;
+                }
+            }
+
+            eqEl.textContent = questionText;
+            visualEl.innerHTML = visualHTML;
+            renderOptions(currentAnswer);
+        }
+
+        /* ==========================================================================
+           توليد 4 خيارات ملونة للإجابة
+           ========================================================================== */
+        function renderOptions(correct) {
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            let choices = new Set([correct]);
+            while (choices.size < 4) {
+                let offset = randomInt(-5, 5);
+                if (offset === 0) offset = 2;
+                let wrong = correct + offset;
+                if (wrong >= 0) {
+                    choices.add(wrong);
+                }
+            }
+
+            // خلط الخيارات عشوائياً
+            const shuffled = Array.from(choices).sort(() => Math.random() - 0.5);
+
+            const colors = [
+                'bg-sky-400 hover:bg-sky-500 text-white',
+                'bg-amber-400 hover:bg-amber-500 text-slate-900',
+                'bg-pink-400 hover:bg-pink-500 text-white',
+                'bg-emerald-400 hover:bg-emerald-500 text-white'
+            ];
+
+            shuffled.forEach((val, index) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-3d ${colors[index]} py-4 px-2 rounded-3xl text-3xl sm:text-4xl font-black border-4 border-white cursor-pointer transition transform hover:scale-105`;
+                btn.textContent = val;
+                btn.onclick = () => checkAnswer(val, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        /* ==========================================================================
+           التحقق من الإجابة وتقديم المكافآت البصرية والصوتية
+           ========================================================================== */
+        function checkAnswer(selected, btnElement = null) {
+            if (isAnswered) return;
+
+            const feedbackEl = document.getElementById('feedback-message');
+            feedbackEl.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (Number(selected) === currentAnswer) {
+                isAnswered = true;
+                score += 10;
+                streak += 1;
+
+                document.getElementById('score-display').textContent = score;
+                document.getElementById('streak-display').textContent = streak;
+
+                const msg = praiseMessages[randomInt(0, praiseMessages.length - 1)];
+                feedbackEl.textContent = msg;
+                feedbackEl.classList.add('bg-emerald-100', 'text-emerald-800', 'border-2', 'border-emerald-300');
+
+                if (btnElement) {
+                    btnElement.classList.add('ring-4', 'ring-emerald-600', 'scale-105');
+                }
+
+                playSound('correct');
+                launchConfetti();
+
+                // الانتقال التلقائي للسؤال التالي بعد ثانيتين
+                setTimeout(() => {
+                    generateQuestion();
+                }, 2000);
+
+            } else {
+                streak = 0;
+                document.getElementById('streak-display').textContent = streak;
+
+                const msg = tryAgainMessages[randomInt(0, tryAgainMessages.length - 1)];
+                feedbackEl.textContent = msg;
+                feedbackEl.classList.add('bg-rose-100', 'text-rose-800', 'border-2', 'border-rose-300');
+
+                if (btnElement) {
+                    btnElement.classList.add('animate-shake', 'opacity-60');
+                    setTimeout(() => btnElement.classList.remove('animate-shake'), 400);
+                }
+
+                playSound('wrong');
+            }
+        }
+
+        function checkManualAnswer() {
+            const input = document.getElementById('manual-answer');
+            if (input.value === '') return;
+            checkAnswer(Number(input.value));
+        }
+
+        // السماح بالضغط على زر Enter في حقل الإدخال اليدوي
+        document.getElementById('manual-answer').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkManualAnswer();
+            }
+        });
+
+        /* ==========================================================================
+           مستكشف جدول الضرب التفاعلي (من 1 إلى 10)
+           ========================================================================== */
+        function initMultiplicationExplorer() {
+            const selector = document.getElementById('table-selector');
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = `table-num-btn w-10 h-10 sm:w-12 sm:h-12 rounded-2xl font-black text-lg sm:text-xl border-2 border-amber-300 bg-white hover:bg-amber-400 hover:text-white text-amber-800 transition shadow-sm cursor-pointer`;
+                btn.onclick = () => showMultiplicationTable(i, btn);
+                selector.appendChild(btn);
+            }
+            // عرض جدول الرقم 2 افتراضياً
+            showMultiplicationTable(2, selector.children[1]);
+        }
+
+        function showMultiplicationTable(num, activeBtn) {
+            playSound('click');
+            document.querySelectorAll('.table-num-btn').forEach(b => {
+                b.classList.remove('bg-amber-500', 'text-white', 'scale-110');
+                b.classList.add('bg-white', 'text-amber-800');
+            });
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-amber-800');
+                activeBtn.classList.add('bg-amber-500', 'text-white', 'scale-110');
+            }
+
+            const container = document.getElementById('multiplication-display');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= 10; i++) {
+                const card = document.createElement('div');
+                card.dir = 'ltr';
+                card.className = 'bg-white border-2 border-amber-200 rounded-2xl p-3 text-center shadow-sm hover:shadow-md transition animate-pop';
+                card.innerHTML = `
+                    <span class="text-lg sm:text-xl font-black text-slate-700">${num} × ${i} = </span>
+                    <span class="text-xl sm:text-2xl font-black text-amber-600">${num * i}</span>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        /* ==========================================================================
+           تأثير قصاصات الاحتفال (Confetti) عند الإجابة الصحيحة
+           ========================================================================== */
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function launchConfetti() {
+            const colors = ['#FACC15', '#38BDF8', '#4ADE80', '#F472B6', '#A78BFA', '#FB923C'];
+            for (let i = 0; i < 65; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.7) * 16,
+                    size: Math.random() * 10 + 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 10,
+                    life: 80
+                });
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.4; // جاذبية خفيفة
+                p.rotation += p.rotSpeed;
+                p.life--;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                ctx.restore();
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+        /* ==========================================================================
+           تشغيل التطبيق عند تحميل الصفحة
+           ========================================================================== */
+        window.onload = function () {
+            selectGrade(1);
+            initMultiplicationExplorer();
+            animateConfetti();
+        };
+    </script>
+</body>
+</html>
